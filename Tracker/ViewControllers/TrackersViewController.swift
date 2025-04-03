@@ -1,4 +1,3 @@
-
 import UIKit
 import CoreData
 
@@ -15,7 +14,7 @@ final class TrackersViewController: UIViewController {
     var currentDate: Date = Date()
     var completedTrackers: Set<CompletedTrackerID> = []
     
-    // Используем общий экземпляр TrackerStore (TrackerStore.shared – предположительно настроен как синглтон)
+    // Используем общий экземпляр TrackerStore (TrackerStore.shared – настроен как синглтон)
     private let trackerStore: TrackerStoreProtocol = TrackerStore.shared
     private let trackerRecordStore = TrackerRecordStore()
     
@@ -231,8 +230,7 @@ final class TrackersViewController: UIViewController {
         do {
             let loadedTrackers = try trackerCoreDatas.map { coreData -> Tracker in
                 // Преобразуем объект Core Data в модель Tracker.
-                // Метод tracker(from:) делаем доступным через каст к TrackerCoreStore,
-                // предполагается, что trackerStore – это экземпляр TrackerCoreStore.
+                // Метод tracker(from:) теперь имеет internal уровень доступа.
                 return try (trackerStore as! TrackerCoreStore).tracker(from: coreData)
             }
             
@@ -439,24 +437,11 @@ extension TrackersViewController: UICollectionViewDelegate {
 
 extension TrackersViewController: NewHabitControllerDelegate {
     func didCreateTracker(_ tracker: Tracker, category: String) {
-        var newCategories = categories
-        
-        if let index = categories.firstIndex(where: { $0.title == category }) {
-            let existingCategory = categories[index]
-            let newTrackers = existingCategory.trackers + [tracker]
-            let updatedCategory = TrackerCategory(title: category, trackers: newTrackers)
-            newCategories[index] = updatedCategory
-        } else {
-            let newCategory = TrackerCategory(title: category, trackers: [tracker])
-            newCategories.append(newCategory)
-        }
-        categories = newCategories
-        filteredCategories = filterTrackersByDate(currentDate)
-        
+        // Не нужно вручную обновлять массивы, так как NSFetchedResultsController
+        // автоматически обновит список трекеров после сохранения в Core Data.
+        // Можно оставить здесь только, например, перезагрузку коллекции, если это необходимо.
         DispatchQueue.main.async {
             self.collectionView.reloadData()
-            self.updatePlaceholderVisibility()
-            print("Трекер добавлен. Всего категорий: \(self.categories.count)")
         }
     }
 }
